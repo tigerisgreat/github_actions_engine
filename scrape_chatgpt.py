@@ -110,7 +110,7 @@ ACCOUNTS = [
 
 batch_number   = _env_int("BATCH_NUMBER", 1)
 total_batches  = _env_int("TOTAL_BATCHES", 15)
-MAX_PROMPTS    = _env_int("MAX_PROMPTS", 50)
+MAX_PROMPTS    = _env_int("MAX_PROMPTS", 66)
 ACC            = ACCOUNTS[(batch_number - 1) % len(ACCOUNTS)]
 
 with open("merlinAi.json", "r", encoding="utf-8") as f:
@@ -343,6 +343,9 @@ def fetch_chatgpt_code_from_boomlify(
         short_sleep_dbg(sb, "typed login password")
         sb.solve_captcha()
         sb.wait_for_element_absent("input[disabled]")
+        sb.sleep(10)
+        sb.scroll_down(30)
+        sb.sleep(8)
         # # Solve Turnstile if present
         # if not pass_turnstile_if_present(sb, timeout=25):
         #     print("Error: [OTP][Turnstile] Failed to solve challenge on Boomlify login")
