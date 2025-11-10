@@ -419,29 +419,14 @@ def fetch_chatgpt_code_from_boomlify(
         return code
 
     finally:
-        """Clean up tabs safely"""
+        # Use official example approach - just switch tab, let context manager cleanup
         try:
-            if tab_should_close:
-                try:
-                    sb.driver.close()  # ✅ CORRECT METHOD
-                    print("[OTP] Closed Boomlify tab")
-                    save_ss(sb, f"Closed Boomlify tab")
-                except Exception as e:
-                    print(f"[OTP] Could not close tab: {e}")
-                    save_ss(sb, f"Could not close tab")
-            
-            # Switch back to original tab
-            try:
-                sb.switch_to_window(orig_tab_index)
-                print("[OTP] Returned to original tab")
-                save_ss(sb, f"Returned to original tab")
-            except Exception as e:
-                print(f"[OTP] Could not switch tabs: {e}")
-                save_ss(sb, f"Could not switch tabs")
-        
+            sb.switch_to_tab(orig_tab_index)
+            print("[OTP] Switched back to original tab")
+            save_ss(sb, f"Switched back to original tab")
         except Exception as e:
-            print(f"[OTP][WARN] Cleanup failed: {e}")
-            save_ss(sb, f"Cleanup failed")
+            print(f"[OTP][WARN] Could not switch tabs: {str(e)[:100]}")
+            save_ss(sb, f"Could not switch tabs")
 
 
 
