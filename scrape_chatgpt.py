@@ -109,7 +109,7 @@ ACCOUNTS = [
 # ====================== Env / Batching ======================
 
 batch_number   = _env_int("BATCH_NUMBER", 1)
-total_batches  = _env_int("TOTAL_BATCHES", 15)
+total_batches  = _env_int("TOTAL_BATCHES", 2)
 MAX_PROMPTS    = _env_int("MAX_PROMPTS", 50)
 ACC            = ACCOUNTS[(batch_number - 1) % len(ACCOUNTS)]
 
@@ -424,7 +424,7 @@ def fetch_chatgpt_code_from_boomlify(
             sb.switch_to_tab(0)
             print("[OTP] Switched back to original tab")
             save_ss(sb, f"Switched back to original tab")
-            sb.sleep(3)
+            sb.sleep(10)
         except Exception as e:
             print(f"[OTP][WARN] Could not switch tabs: {str(e)[:100]}")
             save_ss(sb, f"Could not switch tabs")
