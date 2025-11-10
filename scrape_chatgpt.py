@@ -324,7 +324,9 @@ def fetch_chatgpt_code_from_boomlify(
 
     try:
         sb.open_new_tab()
-        sb.open("https://boomlify.com/en/login")
+        # sb.open("https://boomlify.com/en/login")
+        url_boomlify = "https://boomlify.com/en/login"
+        sb.activate_cdp_mode(url_boomlify)
         short_sleep_dbg(sb, "boomlify login page")
 
         # Fill login form
@@ -339,11 +341,12 @@ def fetch_chatgpt_code_from_boomlify(
         sb.cdp.type('input[type="password"]', login_password)
         save_ss(sb, "boomlify_password_filled")
         short_sleep_dbg(sb, "typed login password")
-
-        # Solve Turnstile if present
-        if not pass_turnstile_if_present(sb, timeout=25):
-            print("Error: [OTP][Turnstile] Failed to solve challenge on Boomlify login")
-            return None
+        sb.solve_captcha()
+        sb.wait_for_element_absent("input[disabled]")
+        # # Solve Turnstile if present
+        # if not pass_turnstile_if_present(sb, timeout=25):
+        #     print("Error: [OTP][Turnstile] Failed to solve challenge on Boomlify login")
+        #     return None
 
         # Submit login
         click_first(
