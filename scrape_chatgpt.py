@@ -421,9 +421,10 @@ def fetch_chatgpt_code_from_boomlify(
     finally:
         # Use official example approach - just switch tab, let context manager cleanup
         try:
-            sb.switch_to_tab(orig_tab_index)
+            sb.switch_to_tab(0)
             print("[OTP] Switched back to original tab")
             save_ss(sb, f"Switched back to original tab")
+            sb.sleep(3)
         except Exception as e:
             print(f"[OTP][WARN] Could not switch tabs: {str(e)[:100]}")
             save_ss(sb, f"Could not switch tabs")
