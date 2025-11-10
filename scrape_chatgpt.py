@@ -419,10 +419,21 @@ def fetch_chatgpt_code_from_boomlify(
         return code
 
     finally:
-        with suppress(Exception):
+        try:
             if tab_should_close:
-                sb.close_current_tab()
-            sb.switch_to_tab(orig_tab_index)
+                sb.close_current_tab()           # ✅ Close Boomlify tab first
+                print("[OTP] Boomlify tab closed")
+            
+            # Switch to original tab (but only if there are multiple tabs)
+            try:
+                sb.switch_to_tab(orig_tab_index)
+                print("[OTP] Switched back to original tab")
+            except Exception as e:
+                print(f"[OTP][WARN] Could not switch tab: {e}")
+        
+        except Exception as e:
+            print(f"[OTP][WARN] Cleanup failed: {e}")
+
 
 # ====================== Submit OTP on ChatGPT page ======================
 
