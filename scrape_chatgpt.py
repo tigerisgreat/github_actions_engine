@@ -421,8 +421,9 @@ def fetch_chatgpt_code_from_boomlify(
     finally:
         # Use official example approach - just switch tab, let context manager cleanup
         try:
-            sb.switch_to_tab(0)
+            sb.open_new_tab("https://auth.openai.com/email-verification")
             print("[OTP] Switched back to original tab")
+            sb.sleep(8)
             save_ss(sb, f"Switched back to original tab")
             sb.sleep(10)
         except Exception as e:
