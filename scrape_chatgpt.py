@@ -426,6 +426,21 @@ def fetch_chatgpt_code_from_boomlify(
             sb.sleep(8)
             save_ss(sb, f"Switched back to original tab")
             sb.sleep(10)
+            
+            page_html = sb.get_page_source()
+            if len(page_html) < 1000:
+                print("[OTP] Page HTML is very short - likely blank")
+                print(f"HTML: {page_html[:500]}")
+            else:
+                print(f"[OTP] Page HTML length: {len(page_html)}")
+
+            # Check for redirects
+            current_url = sb.get_current_url()
+            if "login" in current_url.lower():
+                print("[OTP] Redirected to login - authentication required")
+            elif "error" in current_url.lower():
+                print("[OTP] Error page detected")  
+
         except Exception as e:
             print(f"[OTP][WARN] Could not switch tabs: {str(e)[:100]}")
             save_ss(sb, f"Could not switch tabs")
