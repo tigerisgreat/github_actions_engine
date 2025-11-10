@@ -110,7 +110,7 @@ ACCOUNTS = [
 
 batch_number   = _env_int("BATCH_NUMBER", 1)
 total_batches  = _env_int("TOTAL_BATCHES", 15)
-MAX_PROMPTS    = _env_int("MAX_PROMPTS", 66)
+MAX_PROMPTS    = _env_int("MAX_PROMPTS", 50)
 ACC            = ACCOUNTS[(batch_number - 1) % len(ACCOUNTS)]
 
 with open("merlinAi.json", "r", encoding="utf-8") as f:
@@ -328,7 +328,7 @@ def fetch_chatgpt_code_from_boomlify(
         url_boomlify = "https://boomlify.com/en/login"
         sb.activate_cdp_mode(url_boomlify)
         short_sleep_dbg(sb, "boomlify login page")
-
+        sb.sleep(random(2,5))
         # Fill login form
         sb.cdp.wait_for_element_visible('input[type="email"]', timeout=20)
         sb.cdp.click('input[type="email"]')
@@ -341,6 +341,7 @@ def fetch_chatgpt_code_from_boomlify(
         sb.cdp.type('input[type="password"]', login_password)
         save_ss(sb, "boomlify_password_filled")
         short_sleep_dbg(sb, "typed login password")
+        sb.sleep(2)
         sb.solve_captcha()
         sb.wait_for_element_absent("input[disabled]")
         sb.sleep(10)
