@@ -1,0 +1,5 @@
+seleniumbase
+beautifulsoup4
+requests
+pyvirtualdisplay
+python-xlib
