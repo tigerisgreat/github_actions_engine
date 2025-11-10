@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#hello
+
 import json
 import os
 import re
@@ -419,20 +419,30 @@ def fetch_chatgpt_code_from_boomlify(
         return code
 
     finally:
+        """Clean up tabs safely"""
         try:
             if tab_should_close:
-                sb.close_current_tab()           # ✅ Close Boomlify tab first
-                print("[OTP] Boomlify tab closed")
+                try:
+                    sb.driver.close()  # ✅ CORRECT METHOD
+                    print("[OTP] Closed Boomlify tab")
+                    save_ss(sb, f"Closed Boomlify tab")
+                except Exception as e:
+                    print(f"[OTP] Could not close tab: {e}")
+                    save_ss(sb, f"Could not close tab")
             
-            # Switch to original tab (but only if there are multiple tabs)
+            # Switch back to original tab
             try:
-                sb.switch_to_tab(orig_tab_index)
-                print("[OTP] Switched back to original tab")
+                sb.switch_to_window(orig_tab_index)
+                print("[OTP] Returned to original tab")
+                save_ss(sb, f"Returned to original tab")
             except Exception as e:
-                print(f"[OTP][WARN] Could not switch tab: {e}")
+                print(f"[OTP] Could not switch tabs: {e}")
+                save_ss(sb, f"Could not switch tabs")
         
         except Exception as e:
             print(f"[OTP][WARN] Cleanup failed: {e}")
+            save_ss(sb, f"Cleanup failed")
+
 
 
 # ====================== Submit OTP on ChatGPT page ======================
@@ -929,4 +939,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
