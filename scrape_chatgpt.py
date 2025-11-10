@@ -375,9 +375,9 @@ def fetch_chatgpt_code_from_boomlify(
         with suppress(Exception):
             page = sb.get_page_source()
 
-        if re.search(r"Guest User", page, re.I) or re.search(r"\bLogin\b", page, re.I):
-            print("Error: [OTP][ERROR] Boomlify login verification failed (still guest?)")
-            return None
+        # if re.search(r"Guest User", page, re.I) or re.search(r"\bLogin\b", page, re.I):
+        #     print("Error: [OTP][ERROR] Boomlify login verification failed (still guest?)")
+        #     return None
 
         # Search the email
         search_selectors = [
