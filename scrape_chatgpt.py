@@ -323,12 +323,11 @@ def fetch_chatgpt_code_from_boomlify(
         orig_tab_index = 0
 
     try:
-        sb.open_new_tab()
-        # sb.open("https://boomlify.com/en/login")
-        url_boomlify = "https://boomlify.com/en/login"
-        sb.activate_cdp_mode(url_boomlify)
+        sb.open_new_tab()        
+        url = "https://boomlify.com/en/login"
+        sb.open(url)
         short_sleep_dbg(sb, "boomlify login page")
-        sb.sleep(random(2,5))
+        sb.sleep(3)
         # Fill login form
         sb.cdp.wait_for_element_visible('input[type="email"]', timeout=20)
         sb.cdp.click('input[type="email"]')
