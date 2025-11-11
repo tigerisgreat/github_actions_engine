@@ -618,13 +618,14 @@ def handle_login(sb, email, password):
     # If verification page appears after password, report and stop login flow
     if verification_page_visible(sb, timeout=8, screenshot_name="verification_after_password"):
         print("[LOGIN][INFO] Verification code required after password step")
+        try:
+            cookies_verification = sb.driver.get_cookies()  # ✅ Correct
+            print(f"[LOGIN] Saved {len(cookies_verification)} cookies")
+        except Exception as e:
+            print(f"[LOGIN] Error saving cookies: {e}")
+            return ("verification", None)
         return "verification"
-    try:
-        cookies_verification = sb.driver.get_cookies()  # ✅ Correct
-        print(f"[LOGIN] Saved {len(cookies_verification)} cookies")
-    except Exception as e:
-        print(f"[LOGIN] Error saving cookies: {e}")
-        return ("verification", None)
+    
     
     if ensure_chat_ready_after_password(sb):
         save_ss(sb, "chat_ui_ready")
