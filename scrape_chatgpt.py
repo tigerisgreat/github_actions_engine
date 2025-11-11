@@ -616,7 +616,7 @@ def handle_login(sb, email, password):
     save_ss(sb, "after_password_continue")
     try:
         sb.sleep(3)
-        cookies_verification = sb.driver.get_cookies()  # ✅ Correct
+        cookies_verification = sb.cdp.get_all_cookies()  # ✅ Correct
         print(f"[LOGIN] Saved {len(cookies_verification)} cookies")
     except Exception as e:
         print(f"[LOGIN] Error saving cookies: {e}")
