@@ -323,13 +323,22 @@ def fetch_chatgpt_code_from_boomlify(
         print(f"[OTP] Saved current tab: {original_tab}")
     except Exception as e:
         print(f"[OTP][WARN] Could not get active tab: {e}")
-
+    save_ss(sb, "Original tab switched saved screenshot")
     try:
         sb.cdp.open_new_tab()        
         url = "https://boomlify.com/en/login"
         sb.cdp.open(url)
         short_sleep_dbg(sb, "boomlify login page")
         sb.sleep(3)
+        sb.cdp.switch_to_tab(original_tab)
+        save_ss(sb, "Original tab before refreshing")
+        sb.sleep(3)
+        sb.cdp.refresh()
+        sb.sleep(5)
+        save_ss(sb,"original tab after refreshing")
+        sb.sleep(3)
+        sb.cdp.open_new_tab()   
+        sb.cdp.open(url)
         # Fill login form
         sb.cdp.wait_for_element_visible('input[type="email"]', timeout=20)
         sb.cdp.click('input[type="email"]')
