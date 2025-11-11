@@ -494,7 +494,7 @@ def submit_chatgpt_verification_code(sb, code):
 def handle_login(sb, email, password):
     print("[LOGIN] Navigating to https://chatgpt.com/auth/login")
     try:
-        sb.open("https://chatgpt.com/auth/login")
+        sb.cdp.open("https://chatgpt.com/auth/login")
     except Exception as e:
         print("[LOGIN][ERROR] Could not open /auth/login:", str(e)[:200])
         save_ss(sb, "login_open_error")
