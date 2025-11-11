@@ -323,7 +323,7 @@ def fetch_chatgpt_code_from_boomlify(
         orig_tab_index = 0
 
     try:
-        sb.open_new_tab()        
+        sb.cdp.open_new_tab()        
         url = "https://boomlify.com/en/login"
         sb.open(url)
         short_sleep_dbg(sb, "boomlify login page")
@@ -341,7 +341,7 @@ def fetch_chatgpt_code_from_boomlify(
         save_ss(sb, "boomlify_password_filled")
         short_sleep_dbg(sb, "typed login password")
         sb.sleep(2)
-        sb.solve_captcha()
+        sb.cdp.solve_captcha()
         sb.wait_for_element_absent("input[disabled]")
         sb.sleep(10)
         sb.scroll_down(30)
@@ -366,7 +366,7 @@ def fetch_chatgpt_code_from_boomlify(
         # Make sure we're actually logged in (not Guest)
         with suppress(Exception):
             if not re.search(r"/dashboard", sb.get_current_url() or "", re.I):
-                sb.open("https://boomlify.com/en/dashboard")
+                sb.cdp.open("https://boomlify.com/en/dashboard")
                 sleep_dbg(sb, a=2, b=4, label="ensure dashboard")
 
         save_ss(sb, "boomlify_dashboard_check")
@@ -426,9 +426,9 @@ def fetch_chatgpt_code_from_boomlify(
             sb.sleep(2)
         
             # Refresh the page to reload it
-            sb.cdp.refresh()
-            sb.sleep(3)
-            sb.cdp.set_all_cookies(cookies_verification)
+            # sb.cdp.refresh()
+            # sb.sleep(3)
+            # sb.cdp.set_all_cookies(cookies_verification)
             print("[OTP] Switched back to original tab")
             sb.sleep(8)
             save_ss(sb, f"Switched back to original tab")
