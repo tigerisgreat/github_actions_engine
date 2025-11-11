@@ -303,68 +303,49 @@ def pass_turnstile_if_present(sb, timeout=25):
 
 # ====================== Boomlify OTP Fetcher (second tab) ======================
 
-def fetch_chatgpt_code_from_boomlify(
-    sb,
+# ====================== Boomlify OTP Fetcher (SEPARATE SB SESSION) ======================
+
+def fetch_chatgpt_code_from_boomlify_separate(
     search_email,
     login_email="staywhizzy2023@gmail.com",
     login_password="Katana@23033",
-    tab_should_close=True,
     total_timeout=60,
 ):
     """
-    Opens Boomlify in a new tab, logs in, searches for the given email address,
-    finds "Your ChatGPT code is NNNNNN", returns the 6-digit code (str) or None.
-    Leaves you back on the original tab; closes the Boomlify tab by default.
+    SEPARATE SB session for Boomlify only!
+    Opens its own browser, logs in, gets the OTP code, then closes.
+    Does NOT switch tabs or interact with ChatGPT session.
     """
-    print("[OTP] Opening Boomlify in a new tab to fetch verification code")
-    original_tab = None
-    try:
-        original_tab = sb.cdp.get_active_tab()
-        print(f"[OTP] Saved current tab: {original_tab}")
-    except Exception as e:
-        print(f"[OTP][WARN] Could not get active tab: {e}")
-    save_ss(sb, "Original tab switched saved screenshot")
-    try:
-        sb.cdp.open_new_tab()        
-        url = "https://boomlify.com/en/login"
-        sb.cdp.open(url)
-        short_sleep_dbg(sb, "boomlify login page")
-        sb.sleep(3)
-        sb.cdp.switch_to_tab(original_tab)
-        save_ss(sb, "Original tab before refreshing")
-        sb.sleep(3)
-        sb.cdp.refresh()
-        sb.sleep(5)
-        save_ss(sb,"original tab after refreshing")
-        sb.sleep(3)
-        sb.cdp.open_new_tab()   
-        sb.cdp.open(url)
+    print("[OTP] Starting separate Boomlify browser session...")
+    
+    with SB(uc=True, test=True, ad_block=True, locale="en") as boom_sb:
+        boom_sb.activate_cdp_mode("https://boomlify.com/en/login")
+        short_sleep_dbg(boom_sb, "boomlify login page")
+        boom_sb.sleep(3)
+        
         # Fill login form
-        sb.cdp.wait_for_element_visible('input[type="email"]', timeout=20)
-        sb.cdp.click('input[type="email"]')
-        sb.cdp.type('input[type="email"]', login_email)
-        save_ss(sb, "boomlify_email_filled")
-        short_sleep_dbg(sb, "typed login email")
+        boom_sb.cdp.wait_for_element_visible('input[type="email"]', timeout=20)
+        boom_sb.cdp.click('input[type="email"]')
+        boom_sb.cdp.type('input[type="email"]', login_email)
+        save_ss(boom_sb, "boomlify_email_filled")
+        short_sleep_dbg(boom_sb, "typed login email")
 
-        sb.cdp.wait_for_element_visible('input[type="password"]', timeout=20)
-        sb.cdp.click('input[type="password"]')
-        sb.cdp.type('input[type="password"]', login_password)
-        save_ss(sb, "boomlify_password_filled")
-        short_sleep_dbg(sb, "typed login password")
-        sb.sleep(2)
-        sb.cdp.solve_captcha()
-        sb.cdp.wait_for_element_absent("input[disabled]")
-        sb.sleep(10)
-        sb.cdp.scroll_down(30)
-        sb.sleep(8)
-        # # Solve Turnstile if present
-        # if not pass_turnstile_if_present(sb, timeout=25):
-        #     print("Error: [OTP][Turnstile] Failed to solve challenge on Boomlify login")
-        #     return None
+        boom_sb.cdp.wait_for_element_visible('input[type="password"]', timeout=20)
+        boom_sb.cdp.click('input[type="password"]')
+        boom_sb.cdp.type('input[type="password"]', login_password)
+        save_ss(boom_sb, "boomlify_password_filled")
+        short_sleep_dbg(boom_sb, "typed login password")
+        
+        boom_sb.sleep(2)
+        boom_sb.cdp.solve_captcha()
+        boom_sb.cdp.wait_for_element_absent("input[disabled]")
+        boom_sb.sleep(10)
+        boom_sb.cdp.scroll_down(30)
+        boom_sb.sleep(8)
 
         # Submit login
         click_first(
-            sb,
+            boom_sb,
             [
                 'button:contains("Access Your Secure Inbox")',
                 'button[type="submit"]',
@@ -372,23 +353,15 @@ def fetch_chatgpt_code_from_boomlify(
             label="boomlify-login-submit",
         )
         print("[OTP] Access your inbox button clicked")
-        sleep_dbg(sb, a=3, b=5, label="after submit login")
+        sleep_dbg(boom_sb, a=3, b=5, label="after submit login")
 
-        # Make sure we're actually logged in (not Guest)
+        # Ensure dashboard
         with suppress(Exception):
-            if not re.search(r"/dashboard", sb.get_current_url() or "", re.I):
-                sb.cdp.open("https://boomlify.com/en/dashboard")
-                sleep_dbg(sb, a=2, b=4, label="ensure dashboard")
+            if not re.search(r"/dashboard", boom_sb.cdp.get_current_url() or "", re.I):
+                boom_sb.cdp.open("https://boomlify.com/en/dashboard")
+                sleep_dbg(boom_sb, a=2, b=4, label="ensure dashboard")
 
-        save_ss(sb, "boomlify_dashboard_check")
-
-        page = ""
-        with suppress(Exception):
-            page = sb.cdp.get_page_source()
-
-        # if re.search(r"Guest User", page, re.I) or re.search(r"\bLogin\b", page, re.I):
-        #     print("Error: [OTP][ERROR] Boomlify login verification failed (still guest?)")
-        #     return None
+        save_ss(boom_sb, "boomlify_dashboard_check")
 
         # Search the email
         search_selectors = [
@@ -396,74 +369,40 @@ def fetch_chatgpt_code_from_boomlify(
             'input[type="search"]',
             'input[aria-label*="Search" i]',
         ]
-        ssel = click_first(sb, search_selectors, label="boomlify-search")
+        ssel = click_first(boom_sb, search_selectors, label="boomlify-search")
         if not ssel:
             print("[OTP][ERROR] Search input not found on Boomlify dashboard")
-            save_ss(sb, "boomlify_search_missing")
+            save_ss(boom_sb, "boomlify_search_missing")
             return None
 
-        sb.cdp.select_all(ssel)
-        sb.cdp.type(ssel, search_email)
-        short_sleep_dbg(sb, "after typing search email")
+        boom_sb.cdp.select_all(ssel)
+        boom_sb.cdp.type(ssel, search_email)
+        short_sleep_dbg(boom_sb, "after typing search email")
 
-        # Scrape the 6-digit code (refresh text a few times)
+        # Scrape the 6-digit code
         code = None
         t0 = time.time()
         while time.time() - t0 < total_timeout:
             try:
-                html = sb.cdp.get_page_source()
+                html = boom_sb.cdp.get_page_source()
                 m = re.search(r"Your\s+ChatGPT\s+code\s+is\s+(\d{6})", html, re.I)
                 if m:
                     code = m.group(1)
                     break
             except Exception:
                 pass
-            sb.sleep(1.0)
+            boom_sb.sleep(1.0)
 
         if not code:
-            print(f"Error: [OTP][ERROR] Could not find ChatGPT code for {search_email}")
-            save_ss(sb, "boomlify_code_not_found")
+            print(f"[OTP][ERROR] Could not find ChatGPT code for {search_email}")
+            save_ss(boom_sb, "boomlify_code_not_found")
             return None
 
         print(f"[OTP][SUCCESS] Found verification code: {code}")
-        save_ss(sb, f"boomlify_code_{code}")
+        save_ss(boom_sb, f"boomlify_code_{code}")
         return code
-
-    finally:
-        # Use official example approach - just switch tab, let context manager cleanup
-        try:
-            # sb.open_new_tab("https://auth.openai.com/email-verification")
-            sb.cdp.switch_to_tab(original_tab)
-            sb.sleep(2)
-        
-            # Refresh the page to reload it
-            # sb.cdp.refresh()
-            # sb.sleep(3)
-            # sb.cdp.set_all_cookies(cookies_verification)
-            print("[OTP] Switched back to original tab")
-            sb.sleep(8)
-            print("[OTP] Refreshing page to reload content...")
-            sb.cdp.refresh()
-            sb.sleep(10)
-            
-            page_html = sb.cdp.get_page_source()
-            if len(page_html) < 1000:
-                print("[OTP] Page HTML is very short - likely blank")
-                print(f"HTML: {page_html[:500]}")
-            else:
-                print(f"[OTP] Page HTML length: {len(page_html)}")
-
-            # Check for redirects
-            current_url = sb.get_current_url()
-            if "login" in current_url.lower():
-                print("[OTP] Redirected to login - authentication required")
-            elif "error" in current_url.lower():
-                print("[OTP] Error page detected")  
-
-        except Exception as e:
-            print(f"[OTP][WARN] Could not switch tabs: {str(e)[:100]}")
-            save_ss(sb, f"Could not switch tabs")
-
+    
+    # boom_sb closes automatically here (with statement exits)
 
 
 # ====================== Submit OTP on ChatGPT page ======================
@@ -711,15 +650,19 @@ def scrape_chatgpt_responses(prompts):
                     sleep_dbg(sb, a=8, b=15, label="after initial open")
 
                     if force_login_on_reopen:
-                        print("[INFO] Forced login due to prior error")
-                        lr = handle_login(sb, ACC["email"], ACC["password"])
-                        if lr == "verification":
-                            # Fetch OTP from Boomlify, then submit
-                            code = fetch_chatgpt_code_from_boomlify(sb, ACC["email"])
-                            if code and submit_chatgpt_verification_code(sb, code):
+                        # Fetch OTP from SEPARATE Boomlify browser session
+                        print("[INFO] Fetching OTP from separate Boomlify session...")
+                        code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"])
+                        
+                        if code:
+                            print(f"[INFO] Got OTP code: {code}, submitting to ChatGPT...")
+                            if submit_chatgpt_verification_code(sb, code):
                                 lr = True
                             else:
                                 trigger_reopen = True
+                        else:
+                            print("[ERROR] Failed to get OTP code")
+                            trigger_reopen = True
                         if lr == "reopen" or not lr:
                             print("Error:  Login failed -> reopen")
                             trigger_reopen = True
@@ -731,7 +674,7 @@ def scrape_chatgpt_responses(prompts):
                             print("[INFO] Login page detected -> /auth/login flow")
                             lr = handle_login(sb, ACC["email"], ACC["password"])
                             if lr == "verification":
-                                code = fetch_chatgpt_code_from_boomlify(sb, ACC["email"])
+                                code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"])
                                 if code and submit_chatgpt_verification_code(sb, code):
                                     lr = True
                                 else:
