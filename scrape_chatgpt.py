@@ -430,7 +430,8 @@ def fetch_chatgpt_code_from_boomlify_separate(
         while time.time() - t0 < total_timeout:
             try:
                 html = boom_sb.cdp.get_page_source()
-                m = re.search(r"Your\s+ChatGPT\s+code\s+is\s+(\d{6})", html, re.I)
+                m = re.search(r"Your\s+(?:ChatGPT|OpenAI)\s+(?:code\s+is|password\s+reset\s+code\s+is)\s+(\d{6})", html, re.I)
+                print("Pika 12")
                 if m:
                     code = m.group(1)
                     break
