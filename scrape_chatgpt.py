@@ -317,10 +317,12 @@ def fetch_chatgpt_code_from_boomlify(
     Leaves you back on the original tab; closes the Boomlify tab by default.
     """
     print("[OTP] Opening Boomlify in a new tab to fetch verification code")
+    original_tab = None
     try:
-        orig_tab_index = 0
-    except Exception:
-        orig_tab_index = 0
+        original_tab = sb.cdp.get_active_tab()
+        print(f"[OTP] Saved current tab: {original_tab}")
+    except Exception as e:
+        print(f"[OTP][WARN] Could not get active tab: {e}")
 
     try:
         sb.cdp.open_new_tab()        
@@ -422,7 +424,7 @@ def fetch_chatgpt_code_from_boomlify(
         # Use official example approach - just switch tab, let context manager cleanup
         try:
             # sb.open_new_tab("https://auth.openai.com/email-verification")
-            sb.cdp.switch_to_window(orig_tab_index)
+            sb.cdp.switch_to_tab(original_tab)
             sb.sleep(2)
         
             # Refresh the page to reload it
