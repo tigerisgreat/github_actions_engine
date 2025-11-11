@@ -622,25 +622,26 @@ def handle_login(sb, email, password):
         print(f"[COOKIES] Saved {len(cookies_verification)} cookies")
     except Exception as e:
         print(f"[COOKIES] Error saving cookies: {e}")
-    
+    print("HELLO 2")
     # If verification page appears after password, report and stop login flow
     if verification_page_visible(sb, timeout=8, screenshot_name="verification_after_password"):
         print("[LOGIN][INFO] Verification code required after password step")
         error_page="verification"
         return "verification"
     
-    
+    print("HELLO 3")
+    if is_incorrect_credentials_page(sb):
+        print("HELLO 4")
+        print("[INCORRECT PASSWORD] Incorrect credentials detected! Need to reset password now!")
+        error_page="password incorrect"
+        return "password_incorrect"
+    print("HELLO 5")
     if ensure_chat_ready_after_password(sb):
         save_ss(sb, "chat_ui_ready")
         print("[LOGIN] Login successful, chat UI visible")
         error_page="we_passed"
         return True
-    
-    if is_incorrect_credentials_page(sb):
-        print("HELLO 3")
-        print("[INCORRECT PASSWORD] Incorrect credentials detected! Need to reset password now!")
-        error_page="password incorrect"
-        return "password_incorrect"
+    print("HELLO 6")
     # Handle error: retry with another account or abort
 
     print("[LOGIN][ERROR] After login, #prompt-textarea not visible")
