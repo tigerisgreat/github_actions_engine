@@ -112,7 +112,7 @@ batch_number   = _env_int("BATCH_NUMBER", 1)
 total_batches  = _env_int("TOTAL_BATCHES", 2)
 MAX_PROMPTS    = _env_int("MAX_PROMPTS", 50)
 ACC            = ACCOUNTS[(batch_number - 1) % len(ACCOUNTS)]
-cookies_verification=any
+cookies_verification=None
 with open("merlinAi.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 all_prompts = [sanitize_prompt(q.get("text", "")) for q in data.get("queries", [])]
@@ -614,16 +614,15 @@ def handle_login(sb, email, password):
 
     sleep_dbg(sb, a=8, b=15, label="after Continue (password)")
     save_ss(sb, "after_password_continue")
-
+    try:
+        cookies_verification = sb.get()  # ✅ Correct
+        print(f"[LOGIN] Saved {len(cookies_verification)} cookies")
+    except Exception as e:
+        print(f"[LOGIN] Error saving cookies: {e}")
+    
     # If verification page appears after password, report and stop login flow
     if verification_page_visible(sb, timeout=8, screenshot_name="verification_after_password"):
         print("[LOGIN][INFO] Verification code required after password step")
-        try:
-            cookies_verification = sb.driver.get_cookies()  # ✅ Correct
-            print(f"[LOGIN] Saved {len(cookies_verification)} cookies")
-        except Exception as e:
-            print(f"[LOGIN] Error saving cookies: {e}")
-            return ("verification", None)
         return "verification"
     
     
