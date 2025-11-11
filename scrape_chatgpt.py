@@ -86,6 +86,47 @@ def _env_int(name, default):
     except Exception:
         return default
 
+def is_incorrect_credentials_page(sb, timeout=5, screenshot_name="incorrect_credentials_detected"):
+    """
+    Detects if the current page is showing an "Incorrect email address or password" error.
+    Returns True if found, False otherwise.
+    Screenshots if detected.
+    """
+    ERROR_TEXTS = [
+        "incorrect email address or password",
+        "invalid credentials",
+        "email or password is incorrect",
+        "invalid email or password",
+    ]
+    selectors = [
+        "div:contains('Incorrect email address or password')",
+        "span:contains('Incorrect email address or password')",
+        "div[role='alert']",
+        "div[data-error]",
+        "p:contains('Incorrect')",
+        "div:contains('invalid credentials')",
+    ]
+    # Try direct text search first
+    try:
+        html = sb.cdp.get_page_source()
+        for phrase in ERROR_TEXTS:
+            if phrase.lower() in html.lower():
+                print("[LOGIN DETECT] Found error text:", phrase)
+                save_ss(sb, screenshot_name)
+                return True
+    except Exception:
+        pass
+    # Try selectors/visible UI
+    from contextlib import suppress
+    for sel in selectors:
+        with suppress(Exception):
+            if sb.cdp.is_element_visible(sel):
+                print(f"[LOGIN DETECT] Error visible via selector: {sel}")
+                save_ss(sb, screenshot_name)
+                return True
+    return False
+
+
 # ====================== Accounts ======================
 
 ACCOUNTS = [
@@ -93,7 +134,7 @@ ACCOUNTS = [
     {"email": "ad9cbnnws29x@no.vsmailpro.com", "password": "Katana@230331"},
     {"email": "dsirtrganwfqljx@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "zhvc0ex05l@no.vsmailpro.com", "password": "Katana@23033"},
-    {"email": "c3v4ebrqk28es2a@no.vsmailpro.com", "password": "Katana@23033"},
+    {"email": "c3v4ebrqk28es2a@no.vsmailpro.com", "password": "Katana@230331"},
     {"email": "rq1gyi1tlibvk@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "yi58k4kx@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "tamw4cosq8wd4@no.vsmailpro.com", "password": "Katana@23033"},
@@ -124,7 +165,7 @@ prompts_per_batch = max(1, len(all_prompts) // max(1, total_batches))
 start_idx = (batch_number - 1) * prompts_per_batch
 end_idx   = len(all_prompts) if batch_number == total_batches else min(len(all_prompts), start_idx + prompts_per_batch)
 batch_prompts = all_prompts[start_idx:end_idx][:MAX_PROMPTS]
-
+error_page=""
 os.makedirs("screenshots", exist_ok=True)
 
 print("\n" + "=" * 80)
@@ -313,6 +354,7 @@ def fetch_chatgpt_code_from_boomlify_separate(
     login_email="staywhizzy2023@gmail.com",
     login_password="Katana@23033",
     total_timeout=60,
+    error_page="",
 ):
     """
     SEPARATE SB session for Boomlify only!
@@ -321,91 +363,94 @@ def fetch_chatgpt_code_from_boomlify_separate(
     """
     print("[OTP] Starting separate Boomlify browser session...")
     
-    with SB(uc=True, test=True, ad_block=True, locale="en") as boom_sb:
-        boom_sb.activate_cdp_mode("https://boomlify.com/en/login")
-        short_sleep_dbg(boom_sb, "boomlify login page")
-        boom_sb.sleep(3)
+    if error_page=="verification":
+        with SB(uc=True, test=True, ad_block=True, locale="en") as boom_sb:
+            boom_sb.activate_cdp_mode("https://boomlify.com/en/login")
+            short_sleep_dbg(boom_sb, "boomlify login page")
+            boom_sb.sleep(3)
+            
+            # Fill login form
+            boom_sb.cdp.wait_for_element_visible('input[type="email"]', timeout=20)
+            boom_sb.cdp.click('input[type="email"]')
+            boom_sb.cdp.type('input[type="email"]', login_email)
+            save_ss(boom_sb, "boomlify_email_filled")
+            short_sleep_dbg(boom_sb, "typed login email")
+
+            boom_sb.cdp.wait_for_element_visible('input[type="password"]', timeout=20)
+            boom_sb.cdp.click('input[type="password"]')
+            boom_sb.cdp.type('input[type="password"]', login_password)
+            save_ss(boom_sb, "boomlify_password_filled")
+            short_sleep_dbg(boom_sb, "typed login password")
+            
+            boom_sb.sleep(2)
+            boom_sb.cdp.solve_captcha()
+            boom_sb.cdp.wait_for_element_absent("input[disabled]")
+            boom_sb.sleep(10)
+            boom_sb.cdp.scroll_down(30)
+            boom_sb.sleep(8)
+
+            # Submit login
+            click_first(
+                boom_sb,
+                [
+                    'button:contains("Access Your Secure Inbox")',
+                    'button[type="submit"]',
+                ],
+                label="boomlify-login-submit",
+            )
+            print("[OTP] Access your inbox button clicked")
+            sleep_dbg(boom_sb, a=3, b=5, label="after submit login")
+
+            # Ensure dashboard
+            with suppress(Exception):
+                if not re.search(r"/dashboard", boom_sb.cdp.get_current_url() or "", re.I):
+                    boom_sb.cdp.open("https://boomlify.com/en/dashboard")
+                    sleep_dbg(boom_sb, a=2, b=4, label="ensure dashboard")
+
+            save_ss(boom_sb, "boomlify_dashboard_check")
+
+            # Search the email
+            search_selectors = [
+                'input[placeholder*="Search" i]',
+                'input[type="search"]',
+                'input[aria-label*="Search" i]',
+            ]
+            ssel = click_first(boom_sb, search_selectors, label="boomlify-search")
+            if not ssel:
+                print("[OTP][ERROR] Search input not found on Boomlify dashboard")
+                save_ss(boom_sb, "boomlify_search_missing")
+                return None
+
+            boom_sb.cdp.select_all(ssel)
+            boom_sb.cdp.type(ssel, search_email)
+            short_sleep_dbg(boom_sb, "after typing search email")
+
+            # Scrape the 6-digit code
+            code = None
+            t0 = time.time()
+            while time.time() - t0 < total_timeout:
+                try:
+                    html = boom_sb.cdp.get_page_source()
+                    m = re.search(r"Your\s+ChatGPT\s+code\s+is\s+(\d{6})", html, re.I)
+                    if m:
+                        code = m.group(1)
+                        break
+                except Exception:
+                    pass
+                boom_sb.sleep(1.0)
+
+            if not code:
+                print(f"[OTP][ERROR] Could not find ChatGPT code for {search_email}")
+                save_ss(boom_sb, "boomlify_code_not_found")
+                return None
+
+            print(f"[OTP][SUCCESS] Found verification code: {code}")
+            save_ss(boom_sb, f"boomlify_code_{code}")
+            return code
         
-        # Fill login form
-        boom_sb.cdp.wait_for_element_visible('input[type="email"]', timeout=20)
-        boom_sb.cdp.click('input[type="email"]')
-        boom_sb.cdp.type('input[type="email"]', login_email)
-        save_ss(boom_sb, "boomlify_email_filled")
-        short_sleep_dbg(boom_sb, "typed login email")
-
-        boom_sb.cdp.wait_for_element_visible('input[type="password"]', timeout=20)
-        boom_sb.cdp.click('input[type="password"]')
-        boom_sb.cdp.type('input[type="password"]', login_password)
-        save_ss(boom_sb, "boomlify_password_filled")
-        short_sleep_dbg(boom_sb, "typed login password")
-        
-        boom_sb.sleep(2)
-        boom_sb.cdp.solve_captcha()
-        boom_sb.cdp.wait_for_element_absent("input[disabled]")
-        boom_sb.sleep(10)
-        boom_sb.cdp.scroll_down(30)
-        boom_sb.sleep(8)
-
-        # Submit login
-        click_first(
-            boom_sb,
-            [
-                'button:contains("Access Your Secure Inbox")',
-                'button[type="submit"]',
-            ],
-            label="boomlify-login-submit",
-        )
-        print("[OTP] Access your inbox button clicked")
-        sleep_dbg(boom_sb, a=3, b=5, label="after submit login")
-
-        # Ensure dashboard
-        with suppress(Exception):
-            if not re.search(r"/dashboard", boom_sb.cdp.get_current_url() or "", re.I):
-                boom_sb.cdp.open("https://boomlify.com/en/dashboard")
-                sleep_dbg(boom_sb, a=2, b=4, label="ensure dashboard")
-
-        save_ss(boom_sb, "boomlify_dashboard_check")
-
-        # Search the email
-        search_selectors = [
-            'input[placeholder*="Search" i]',
-            'input[type="search"]',
-            'input[aria-label*="Search" i]',
-        ]
-        ssel = click_first(boom_sb, search_selectors, label="boomlify-search")
-        if not ssel:
-            print("[OTP][ERROR] Search input not found on Boomlify dashboard")
-            save_ss(boom_sb, "boomlify_search_missing")
-            return None
-
-        boom_sb.cdp.select_all(ssel)
-        boom_sb.cdp.type(ssel, search_email)
-        short_sleep_dbg(boom_sb, "after typing search email")
-
-        # Scrape the 6-digit code
-        code = None
-        t0 = time.time()
-        while time.time() - t0 < total_timeout:
-            try:
-                html = boom_sb.cdp.get_page_source()
-                m = re.search(r"Your\s+ChatGPT\s+code\s+is\s+(\d{6})", html, re.I)
-                if m:
-                    code = m.group(1)
-                    break
-            except Exception:
-                pass
-            boom_sb.sleep(1.0)
-
-        if not code:
-            print(f"[OTP][ERROR] Could not find ChatGPT code for {search_email}")
-            save_ss(boom_sb, "boomlify_code_not_found")
-            return None
-
-        print(f"[OTP][SUCCESS] Found verification code: {code}")
-        save_ss(boom_sb, f"boomlify_code_{code}")
-        return code
-    
-    # boom_sb closes automatically here (with statement exits)
+        # boom_sb closes automatically here (with statement exits)
+    if error_page=="password_incorrect":
+        return -1
 
 
 # ====================== Submit OTP on ChatGPT page ======================
@@ -577,20 +622,28 @@ def handle_login(sb, email, password):
     try:
         sb.sleep(3)
         cookies_verification = sb.cdp.get_all_cookies()  # ✅ Correct
-        print(f"[LOGIN] Saved {len(cookies_verification)} cookies")
+        print(f"[COOKIES] Saved {len(cookies_verification)} cookies")
     except Exception as e:
-        print(f"[LOGIN] Error saving cookies: {e}")
+        print(f"[COOKIES] Error saving cookies: {e}")
     
     # If verification page appears after password, report and stop login flow
     if verification_page_visible(sb, timeout=8, screenshot_name="verification_after_password"):
         print("[LOGIN][INFO] Verification code required after password step")
+        error_page="verification"
         return "verification"
     
     
     if ensure_chat_ready_after_password(sb):
         save_ss(sb, "chat_ui_ready")
         print("[LOGIN] Login successful, chat UI visible")
+        error_page="we_passed"
         return True
+    
+    if is_incorrect_credentials_page(sb):
+        print("[INCORRECT PASSWORD] Incorrect credentials detected! Need to reset password now!")
+        error_page="password incorrect"
+        return "password_incorrect"
+    # Handle error: retry with another account or abort
 
     print("[LOGIN][ERROR] After login, #prompt-textarea not visible")
     return "reopen"
@@ -655,7 +708,7 @@ def scrape_chatgpt_responses(prompts):
                     if force_login_on_reopen:
                         # Fetch OTP from SEPARATE Boomlify browser session
                         print("[INFO] Fetching OTP from separate Boomlify session...")
-                        code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"])
+                        code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"],"verification")
                         
                         if code:
                             print(f"[INFO] Got OTP code: {code}, submitting to ChatGPT...")
