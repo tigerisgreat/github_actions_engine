@@ -19,7 +19,7 @@ def sleep_dbg(sb, secs=None, a=None, b=None, label=""):
     return secs
 
 def short_sleep_dbg(sb, label=""):
-    secs = random.randint(8, 15) / 10.0  # 0.8–1.5s
+    secs = random.randint(8, 45) / 10.0  # 0.8–1.5s
     print(f"[SLEEP] {label} short sleep {secs:.1f}s")
     sb.sleep(secs)
     return secs
@@ -51,11 +51,9 @@ def save_ss(sb, name):
 
 def sanitize_prompt(p):
     """
-    Normalize a raw prompt string and strip any leading control keywords.
-    - Removes zero-width spaces and brackets.
-    - Drops any chain of leading 'prompt'/'delete'/'query' with optional punctuation,
-      even if fused (e.g., 'Deleteprompt', 'prompt:prompt-', '[Query]  -  Delete  :  ...').
-    - Collapses whitespace.
+    Normalize a raw prompt string, strip any leading 'prompt'/'delete'/'query' prefix,
+    even if FUSED DIRECTLY to next text (e.g., 'DeleteAs...' -> 'As...').
+    Remains otherwise unchanged.
     """
     if p is None:
         return ""
@@ -63,21 +61,23 @@ def sanitize_prompt(p):
     s = str(p).replace("\u200b", "")
     s = s.replace("[", "").replace("]", "").strip()
 
-    # Remove any number of leading occurrences (fused or spaced) of the control words.
-    # The trick: allow an optional non-alpha boundary between repeats or nothing at all.
-    # We'll do this by looping until no change OR do it in one regex with a "+" group.
+    # Remove any number of leading occurrences (fused or spaced) at the start
     before = None
-    pattern = re.compile(r'^\s*((?:prompt|delete|query)\s*[:\-]?\s*)+', flags=re.I)
+    pattern = re.compile(r'^(?:prompt|delete|query)+', flags=re.I)
     while s != before:
         before = s
-        s = pattern.sub("", s, count=1).strip()
+        s = pattern.sub("", s).strip()
 
-    # If a fused form remains like "deleteprompthello" (unlikely), do one more guard:
-    s = re.sub(r'^(prompt|delete|query)+', '', s, flags=re.I).strip()
+    # Remove any number of control words with separators (space, colon, dash)
+    separator_pattern = re.compile(r'^\s*((?:prompt|delete|query)\s*[:\-]?\s*)+', flags=re.I)
+    while s != before:
+        before = s
+        s = separator_pattern.sub("", s, count=1).strip()
 
     # Normalize spaces
     s = re.sub(r'\s+', ' ', s).strip()
     return s
+
 
 def _env_int(name, default):
     try:
@@ -90,7 +90,7 @@ def _env_int(name, default):
 
 ACCOUNTS = [
     {"email": "pfu1uont0dm@no.vsmailpro.com", "password": "Katana@23033"},
-    {"email": "ad9cbnnws29x@no.vsmailpro.com", "password": "Katana@23033"},
+    {"email": "ad9cbnnws29x@no.vsmailpro.com", "password": "Katana@230331"},
     {"email": "dsirtrganwfqljx@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "zhvc0ex05l@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "c3v4ebrqk28es2a@no.vsmailpro.com", "password": "Katana@23033"},
@@ -104,6 +104,9 @@ ACCOUNTS = [
     {"email": "aq1v22k6chc53@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "op4cvlfbzgazi6l@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "oxmedcxg5of@no.vsmailpro.com", "password": "Katana@23033"},
+    {"email": "bb6twvn8mf@no.vsmailpro.com", "password": "Katana@23033"},
+    {"email": "dgerhd5kaxu@no.vsmailpro.com", "password": "Katana@23033"},
+    {"email": "wueyahc8x@no.vsmailpro.com", "password": "Katana@23033"},
 ]
 
 # ====================== Env / Batching ======================
