@@ -433,7 +433,8 @@ def fetch_chatgpt_code_from_boomlify(
             # sb.cdp.set_all_cookies(cookies_verification)
             print("[OTP] Switched back to original tab")
             sb.sleep(8)
-            save_ss(sb, f"Switched back to original tab")
+            print("[OTP] Refreshing page to reload content...")
+            sb.cdp.refresh()
             sb.sleep(10)
             
             page_html = sb.cdp.get_page_source()
