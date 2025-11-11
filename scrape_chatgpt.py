@@ -730,7 +730,7 @@ def scrape_chatgpt_responses(prompts):
                             print("[INFO] Login page detected -> /auth/login flow")
                             lr = handle_login(sb, ACC["email"], ACC["password"])
                             if lr == "verification":
-                                code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"])
+                                code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"], error_page="verification")
                                 if code and submit_chatgpt_verification_code(sb, code):
                                     lr = True
                                 else:
