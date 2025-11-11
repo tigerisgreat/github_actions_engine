@@ -325,7 +325,7 @@ def fetch_chatgpt_code_from_boomlify(
     try:
         sb.cdp.open_new_tab()        
         url = "https://boomlify.com/en/login"
-        sb.open(url)
+        sb.cdp.open(url)
         short_sleep_dbg(sb, "boomlify login page")
         sb.sleep(3)
         # Fill login form
@@ -342,9 +342,9 @@ def fetch_chatgpt_code_from_boomlify(
         short_sleep_dbg(sb, "typed login password")
         sb.sleep(2)
         sb.cdp.solve_captcha()
-        sb.wait_for_element_absent("input[disabled]")
+        sb.cdp.wait_for_element_absent("input[disabled]")
         sb.sleep(10)
-        sb.scroll_down(30)
+        sb.cdp.scroll_down(30)
         sb.sleep(8)
         # # Solve Turnstile if present
         # if not pass_turnstile_if_present(sb, timeout=25):
@@ -373,7 +373,7 @@ def fetch_chatgpt_code_from_boomlify(
 
         page = ""
         with suppress(Exception):
-            page = sb.get_page_source()
+            page = sb.cdp.get_page_source()
 
         # if re.search(r"Guest User", page, re.I) or re.search(r"\bLogin\b", page, re.I):
         #     print("Error: [OTP][ERROR] Boomlify login verification failed (still guest?)")
@@ -400,7 +400,7 @@ def fetch_chatgpt_code_from_boomlify(
         t0 = time.time()
         while time.time() - t0 < total_timeout:
             try:
-                html = sb.get_page_source()
+                html = sb.cdp.get_page_source()
                 m = re.search(r"Your\s+ChatGPT\s+code\s+is\s+(\d{6})", html, re.I)
                 if m:
                     code = m.group(1)
