@@ -132,7 +132,7 @@ def is_incorrect_credentials_page(sb, timeout=5, screenshot_name="incorrect_cred
 ACCOUNTS = [
     {"email": "pfu1uont0dm@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "ad9cbnnws29x@no.vsmailpro.com", "password": "Katana@230331"},
-    {"email": "dsirtrganwfqljx@no.vsmailpro.com", "password": "Katana@23033"},
+    {"email": "dsirtrganwfqljx@no.vsmailpro.com", "password": "Katana@230331"},
     {"email": "zhvc0ex05l@no.vsmailpro.com", "password": "Katana@23033"},
     {"email": "c3v4ebrqk28es2a@no.vsmailpro.com", "password": "Katana@230331"},
     {"email": "rq1gyi1tlibvk@no.vsmailpro.com", "password": "Katana@23033"},
@@ -157,6 +157,7 @@ total_batches  = _env_int("TOTAL_BATCHES", 2)
 MAX_PROMPTS    = _env_int("MAX_PROMPTS", 50)
 ACC            = ACCOUNTS[(batch_number - 1) % len(ACCOUNTS)]
 cookies_verification=None
+password_reset=False
 with open("merlinAi.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 all_prompts = [sanitize_prompt(q.get("text", "")) for q in data.get("queries", [])]
@@ -721,10 +722,13 @@ def reset_password(email, password):
             password_reset_sb.cdp.click('div:contains("Re-enter new password")')
             password_reset_sb.cdp.type('div:contains("Re-enter new password")', "Katana@230331")
             password_reset_sb.sleep(2)
+            save_ss(password_reset_sb,"Before password reset continue button")
             print("Pika 10")
             password_reset_sb.cdp.wait_for_element_visible('button:contains("Continue")', timeout=10)
             password_reset_sb.cdp.click('button:contains("Continue")')
             print("Pika 11")
+            password_reset=True
+            save_ss(password_reset_sb,"After password reset continue button")
             return
 
 def try_send(sb):
@@ -775,7 +779,7 @@ def scrape_chatgpt_responses(prompts):
                     sb.activate_cdp_mode(url)
                     sleep_dbg(sb, a=8, b=15, label="after initial open")
 
-                    if force_login_on_reopen:
+                    if force_login_on_reopen and password_reset==False:
                         # Fetch OTP from SEPARATE Boomlify browser session
                         print("[INFO] Fetching OTP from separate Boomlify session...")
                         code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"])
@@ -798,7 +802,10 @@ def scrape_chatgpt_responses(prompts):
                     else:
                         if login_page_visible(sb):
                             print("[INFO] Login page detected -> /auth/login flow")
-                            lr = handle_login(sb, ACC["email"], ACC["password"])
+                            if password_reset==False:
+                                lr = handle_login(sb, ACC["email"], ACC["password"])
+                            else:
+                                lr = handle_login(sb, ACC["email"], "Katana@230331")
                             if lr == "verification":
                                 code = fetch_chatgpt_code_from_boomlify_separate(ACC["email"])
                                 if code and submit_chatgpt_verification_code(sb, code):
@@ -809,6 +816,7 @@ def scrape_chatgpt_responses(prompts):
                                 print("[CODE IS CURRENTLY HERE 1]")
                                 reset_password(ACC["email"], ACC["password"])
                                 print("[CODE IS CURRENTLY HERE 2]")
+                                print("Passwrod RESET done")
                                 lr=True
                             if lr == "reopen" or not lr:
                                 print("Error:  Login failed -> reopen")
