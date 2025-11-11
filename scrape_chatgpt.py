@@ -99,7 +99,7 @@ def is_incorrect_credentials_page(sb, timeout=5, screenshot_name="incorrect_cred
         "invalid email or password",
     ]
     selectors = [
-        "div:contains('Incorrect email address or password')",
+        "li:contains('Incorrect email address or password')",
         "span:contains('Incorrect email address or password')",
         "div[role='alert']",
         "div[data-error]",
@@ -637,6 +637,7 @@ def handle_login(sb, email, password):
         return True
     
     if is_incorrect_credentials_page(sb):
+        print("HELLO 3")
         print("[INCORRECT PASSWORD] Incorrect credentials detected! Need to reset password now!")
         error_page="password incorrect"
         return "password_incorrect"
@@ -796,6 +797,7 @@ def scrape_chatgpt_responses(prompts):
                             if lr=="password_incorrect":
                                 print("[CODE IS CURRENTLY HERE 1]")
                                 reset_password(ACC["email"], ACC["password"])
+                                print("[CODE IS CURRENTLY HERE 2]")
                                 lr=True
                             if lr == "reopen" or not lr:
                                 print("Error:  Login failed -> reopen")
