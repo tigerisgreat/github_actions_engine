@@ -112,7 +112,7 @@ batch_number   = _env_int("BATCH_NUMBER", 1)
 total_batches  = _env_int("TOTAL_BATCHES", 2)
 MAX_PROMPTS    = _env_int("MAX_PROMPTS", 50)
 ACC            = ACCOUNTS[(batch_number - 1) % len(ACCOUNTS)]
-
+cookies_verification=any
 with open("merlinAi.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 all_prompts = [sanitize_prompt(q.get("text", "")) for q in data.get("queries", [])]
@@ -422,6 +422,7 @@ def fetch_chatgpt_code_from_boomlify(
         # Use official example approach - just switch tab, let context manager cleanup
         try:
             sb.open_new_tab("https://auth.openai.com/email-verification")
+            sb.cdp.set_all_cookies(cookies_verification)
             print("[OTP] Switched back to original tab")
             sb.sleep(8)
             save_ss(sb, f"Switched back to original tab")
@@ -618,7 +619,13 @@ def handle_login(sb, email, password):
     if verification_page_visible(sb, timeout=8, screenshot_name="verification_after_password"):
         print("[LOGIN][INFO] Verification code required after password step")
         return "verification"
-
+    try:
+        cookies_verification = sb.driver.get_cookies()  # ✅ Correct
+        print(f"[LOGIN] Saved {len(cookies_verification)} cookies")
+    except Exception as e:
+        print(f"[LOGIN] Error saving cookies: {e}")
+        return ("verification", None)
+    
     if ensure_chat_ready_after_password(sb):
         save_ss(sb, "chat_ui_ready")
         print("[LOGIN] Login successful, chat UI visible")
