@@ -422,7 +422,7 @@ def fetch_chatgpt_code_from_boomlify(
         # Use official example approach - just switch tab, let context manager cleanup
         try:
             # sb.open_new_tab("https://auth.openai.com/email-verification")
-            sb.switch_to_window(orig_tab_index)
+            sb.cdp.switch_to_window(orig_tab_index)
             sb.sleep(2)
         
             # Refresh the page to reload it
@@ -434,7 +434,7 @@ def fetch_chatgpt_code_from_boomlify(
             save_ss(sb, f"Switched back to original tab")
             sb.sleep(10)
             
-            page_html = sb.get_page_source()
+            page_html = sb.cdp.get_page_source()
             if len(page_html) < 1000:
                 print("[OTP] Page HTML is very short - likely blank")
                 print(f"HTML: {page_html[:500]}")
